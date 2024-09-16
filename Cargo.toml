@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rocksdb = "0.20.0"   # Ensure you're using the latest version
+rocksdb = "0.22.0"   # Ensure you're using the latest version
 rand = "0.8"         # For generating random data
 env_logger = "0.10"  # For logging with environment variable configuration
 log = "0.4"          # Logging facade
