@@ -1,7 +1,12 @@
 use env_logger;
 use log::{error, info};
 use rand::Rng;
-use rocksdb::{DBCompactionStyle, DBCompressionType, Options, WriteBatch, WriteOptions, DB};
+use redb::{Database, TableDefinition};
+use rocksdb::{
+    DBCompactionStyle, DBCompressionType, Options, WriteBatch, WriteOptions as RocksWriteOptions,
+    DB,
+};
+use std::env;
 use std::time::Instant;
 
 fn main() {
@@ -10,6 +15,14 @@ fn main() {
         .format_timestamp_secs()
         .init();
 
+    // Benchmark RocksDB
+    bench_rocksdb();
+
+    // Benchmark REDB
+    bench_redb();
+}
+
+fn bench_rocksdb() {
     // Define the path where RocksDB will store its data
     let db_path = "my_rocksdb";
 
@@ -21,7 +34,7 @@ fn main() {
     // Threshold Trigger Settings
     // ===========================
 
-    // Set the size of the write buffer (memtable) in bytes (e.g., 64MB)
+    // Set the size of the write buffer (memtable) in bytes (e.g., 512MB)
     opts.set_write_buffer_size(512 * 1024 * 1024);
 
     // Set the maximum number of write buffers that are built up in memory
@@ -31,16 +44,10 @@ fn main() {
     opts.set_max_background_jobs(4);
 
     // Set the base size for level 1 (in level-based compaction)
-    opts.set_max_bytes_for_level_base(1024 * 1024 * 1024); // 256MB
+    opts.set_max_bytes_for_level_base(1024 * 1024 * 1024); // 1GB
 
     // Set target file size for level compaction
-    opts.set_target_file_size_base(128 * 1024 * 1024); // 64MB
-
-    // ===========================
-    // Write-Ahead Log (WAL) Settings
-    // ===========================
-
-    // Note: Cannot disable WAL globally via Options. Must set per Write operation.
+    opts.set_target_file_size_base(128 * 1024 * 1024); // 128MB
 
     // ===========================
     // Compaction Settings
@@ -86,12 +93,12 @@ fn main() {
     let mut rng = rand::thread_rng();
 
     // Define how many key-value pairs you want to insert
-    let num_entries = 100_000_000;
-    let log_interval = 100_000;
-    let batch_size = 1000; // Number of records per batch
+    let num_entries = 1_000_000;
+    let log_interval = 10_000;
+    let batch_size = 10_000; // Number of records per batch
 
     // Create WriteOptions with disable_wal set to true
-    let mut write_opts = WriteOptions::default();
+    let mut write_opts = RocksWriteOptions::default();
     write_opts.disable_wal(true);
 
     // Start the overall timer
@@ -156,6 +163,164 @@ fn main() {
     let overall_duration = overall_start.elapsed();
     info!(
         "Finished inserting {} entries into RocksDB in {:.2} seconds.",
+        num_entries,
+        overall_duration.as_secs_f64()
+    );
+}
+
+fn bench_redb() {
+    // Define the path where REDB will store its data
+    let db_path = "my_redb";
+
+    // Define a table for key-value pairs
+    // Use a key type that implements `Key`, e.g., [u8;32]
+    const TABLE_DEF: TableDefinition<[u8; 32], u64> = TableDefinition::new("kv");
+
+    // Open or create the REDB database
+    let db = match Database::create(db_path) {
+        Ok(db) => {
+            info!("Opened REDB at '{}'", db_path);
+            db
+        }
+        Err(e) => {
+            error!("Failed to open REDB: {}", e);
+            return;
+        }
+    };
+
+    // Initialize the random number generator
+    let mut rng = rand::thread_rng();
+
+    // Define how many key-value pairs you want to insert
+    let num_entries = 1_000_000;
+    let log_interval = 10_000;
+    let batch_size = 10_000; // Number of records per transaction
+
+    // Start the overall timer
+    let overall_start = Instant::now();
+
+    // Calculate the number of full batches
+    let num_full_batches = num_entries / batch_size;
+    let remaining_entries = num_entries % batch_size;
+
+    for batch_idx in 0..num_full_batches {
+        // Begin a write transaction
+        let transaction = match db.begin_write() {
+            Ok(tx) => tx,
+            Err(e) => {
+                error!(
+                    "Failed to begin transaction for batch {}: {}",
+                    batch_idx + 1,
+                    e
+                );
+                continue;
+            }
+        };
+
+        // Open or create the table within the transaction
+        {
+            let mut table = match transaction.open_table(TABLE_DEF) {
+                Ok(table) => table,
+                Err(e) => {
+                    error!("Failed to open table in batch {}: {}", batch_idx + 1, e);
+                    continue;
+                }
+            };
+
+            // Insert BATCH_SIZE number of key-value pairs
+            for i in 0..batch_size {
+                let global_idx = batch_idx * batch_size + i;
+
+                // Generate a random [u8; 32] key
+                let key: [u8; 32] = rng.gen();
+
+                // Generate a random u64 value
+                let value: u64 = rng.gen();
+
+                // Insert the key-value pair into the table
+                if let Err(e) = table.insert(&key, &value) {
+                    error!("Error inserting key {}: {}", global_idx + 1, e);
+                }
+
+                // Log progress at specified intervals
+                if (global_idx + 1) % log_interval == 0 {
+                    let elapsed = overall_start.elapsed();
+                    info!(
+                        "Inserted {} records in {:.2} seconds.",
+                        global_idx + 1,
+                        elapsed.as_secs_f64()
+                    );
+                }
+            }
+        } // table is dropped here
+
+        // Commit the transaction
+        if let Err(e) = transaction.commit() {
+            error!(
+                "Failed to commit transaction for batch {}: {}",
+                batch_idx + 1,
+                e
+            );
+        }
+    }
+
+    // Handle any remaining entries that didn't fit into a full batch
+    if remaining_entries > 0 {
+        // Begin a write transaction
+        let transaction = match db.begin_write() {
+            Ok(tx) => tx,
+            Err(e) => {
+                error!("Failed to begin transaction for remaining entries: {}", e);
+                return;
+            }
+        };
+
+        // Open or create the table within the transaction
+        {
+            let mut table = match transaction.open_table(TABLE_DEF) {
+                Ok(table) => table,
+                Err(e) => {
+                    error!("Failed to open table for remaining entries: {}", e);
+                    return;
+                }
+            };
+
+            // Insert remaining_entries number of key-value pairs
+            for i in 0..remaining_entries {
+                let global_idx = num_full_batches * batch_size + i;
+
+                // Generate a random [u8; 32] key
+                let key: [u8; 32] = rng.gen();
+
+                // Generate a random u64 value
+                let value: u64 = rng.gen();
+
+                // Insert the key-value pair into the table
+                if let Err(e) = table.insert(&key, &value) {
+                    error!("Error inserting key {}: {}", global_idx + 1, e);
+                }
+
+                // Log progress
+                if (global_idx + 1) % log_interval == 0 {
+                    let elapsed = overall_start.elapsed();
+                    info!(
+                        "Inserted {} records in {:.2} seconds.",
+                        global_idx + 1,
+                        elapsed.as_secs_f64()
+                    );
+                }
+            }
+        } // table is dropped here
+
+        // Commit the transaction
+        if let Err(e) = transaction.commit() {
+            error!("Failed to commit transaction for remaining entries: {}", e);
+        }
+    }
+
+    let overall_duration = overall_start.elapsed();
+    info!(
+        "Finished inserting {} entries into REDB in {:.2} seconds.",
         num_entries,
         overall_duration.as_secs_f64()
     );

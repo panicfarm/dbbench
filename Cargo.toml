@@ -10,3 +10,4 @@ rocksdb = "0.22.0"   # Ensure you're using the latest version
 rand = "0.8"         # For generating random data
 env_logger = "0.10"  # For logging with environment variable configuration
 log = "0.4"          # Logging facade
+redb = "2.1"
