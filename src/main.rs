@@ -9,17 +9,31 @@ use rocksdb::{
 use std::env;
 use std::time::Instant;
 
+// Global constants
+const NUM_ENTRIES: usize = 100_000_000;
+const LOG_INTERVAL: usize = 100_000;
+const BATCH_SIZE: usize = 100_000; // Number of records per batch
+
 fn main() {
     // Initialize the logger with timestamps
     env_logger::Builder::from_default_env()
         .format_timestamp_secs()
         .init();
 
-    // Benchmark RocksDB
-    bench_rocksdb();
+    // Get command line arguments
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 2 {
+        eprintln!("Usage: {} [rocksdb|redb]", args[0]);
+        return;
+    }
 
-    // Benchmark REDB
-    bench_redb();
+    match args[1].as_str() {
+        "rocksdb" => bench_rocksdb(),
+        "redb" => bench_redb(),
+        _ => {
+            eprintln!("Invalid argument. Use 'rocksdb' or 'redb'.");
+        }
+    }
 }
 
 fn bench_rocksdb() {
@@ -93,9 +107,9 @@ fn bench_rocksdb() {
     let mut rng = rand::thread_rng();
 
     // Define how many key-value pairs you want to insert
-    let num_entries = 1_000_000;
-    let log_interval = 10_000;
-    let batch_size = 10_000; // Number of records per batch
+    let num_entries = NUM_ENTRIES;
+    let log_interval = LOG_INTERVAL;
+    let batch_size = BATCH_SIZE; // Number of records per batch
 
     // Create WriteOptions with disable_wal set to true
     let mut write_opts = RocksWriteOptions::default();
@@ -192,9 +206,9 @@ fn bench_redb() {
     let mut rng = rand::thread_rng();
 
     // Define how many key-value pairs you want to insert
-    let num_entries = 1_000_000;
-    let log_interval = 10_000;
-    let batch_size = 10_000; // Number of records per transaction
+    let num_entries = NUM_ENTRIES;
+    let log_interval = LOG_INTERVAL;
+    let batch_size = BATCH_SIZE; // Number of records per transaction
 
     // Start the overall timer
     let overall_start = Instant::now();
