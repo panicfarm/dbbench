@@ -7,14 +7,17 @@ $ RUST_LOG=info cargo run --release -- redb
    Compiling rocksdb_example v0.1.0 (/home/alecm/rocksdb_example)
     Finished release [optimized] target(s) in 4.90s
      Running `target/release/rocksdb_example redb`
-[2024-09-17T18:41:55Z INFO  rocksdb_example] Opened REDB at 'my_redb'
-[2024-09-17T18:41:55Z INFO  rocksdb_example] Inserted 100000 records in 0.58 seconds.
-[2024-09-17T18:41:58Z INFO  rocksdb_example] Inserted 200000 records in 2.95 seconds.
-[2024-09-17T18:42:01Z INFO  rocksdb_example] Inserted 300000 records in 6.00 seconds.
-[2024-09-17T18:42:04Z INFO  rocksdb_example] Inserted 400000 records in 8.80 seconds.
-[2024-09-17T18:42:07Z INFO  rocksdb_example] Inserted 500000 records in 11.92 seconds.
-[2024-09-17T18:42:10Z INFO  rocksdb_example] Inserted 600000 records in 15.09 seconds.
-[2024-09-17T18:42:13Z INFO  rocksdb_example] Inserted 700000 records in 18.03 seconds.
+[2024-09-17T19:00:42Z INFO  rocksdb_example] Inserted 100000 records in 0.43 seconds.
+[2024-09-17T19:00:43Z INFO  rocksdb_example] Inserted 200000 records in 0.80 seconds.
+[2024-09-17T19:00:44Z INFO  rocksdb_example] Inserted 300000 records in 0.94 seconds.
+[2024-09-17T19:00:46Z INFO  rocksdb_example] Inserted 400000 records in 1.93 seconds.
+[2024-09-17T19:00:48Z INFO  rocksdb_example] Inserted 500000 records in 2.17 seconds.
+[2024-09-17T19:00:50Z INFO  rocksdb_example] Inserted 600000 records in 2.39 seconds.
+[2024-09-17T19:00:53Z INFO  rocksdb_example] Inserted 700000 records in 3.02 seconds.
+[2024-09-17T19:00:56Z INFO  rocksdb_example] Inserted 800000 records in 2.58 seconds.
+[2024-09-17T19:00:59Z INFO  rocksdb_example] Inserted 900000 records in 2.74 seconds.
+[2024-09-17T19:01:01Z INFO  rocksdb_example] Inserted 1000000 records in 2.36 seconds.
+[2024-09-17T19:01:04Z INFO  rocksdb_example] Inserted 1100000 records in 2.54 seconds.
 ^C
 $ RUST_LOG=info cargo run --release -- rocksdb
     Finished release [optimized] target(s) in 0.14s

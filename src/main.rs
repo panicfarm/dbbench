@@ -213,6 +213,9 @@ fn bench_redb() {
     // Start the overall timer
     let overall_start = Instant::now();
 
+    // Initialize a timer for the current batch
+    let mut batch_start = Instant::now();
+
     // Calculate the number of full batches
     let num_full_batches = num_entries / batch_size;
     let remaining_entries = num_entries % batch_size;
@@ -256,14 +259,16 @@ fn bench_redb() {
                     error!("Error inserting key {}: {}", global_idx + 1, e);
                 }
 
-                // Log progress at specified intervals
+                // Check if we've reached the log interval
                 if (global_idx + 1) % log_interval == 0 {
-                    let elapsed = overall_start.elapsed();
+                    let batch_duration = batch_start.elapsed();
                     info!(
                         "Inserted {} records in {:.2} seconds.",
                         global_idx + 1,
-                        elapsed.as_secs_f64()
+                        batch_duration.as_secs_f64()
                     );
+                    // Reset the batch timer
+                    batch_start = Instant::now();
                 }
             }
         } // table is dropped here
@@ -314,14 +319,16 @@ fn bench_redb() {
                     error!("Error inserting key {}: {}", global_idx + 1, e);
                 }
 
-                // Log progress
+                // Check if we've reached the log interval
                 if (global_idx + 1) % log_interval == 0 {
-                    let elapsed = overall_start.elapsed();
+                    let batch_duration = batch_start.elapsed();
                     info!(
                         "Inserted {} records in {:.2} seconds.",
                         global_idx + 1,
-                        elapsed.as_secs_f64()
+                        batch_duration.as_secs_f64()
                     );
+                    // Reset the batch timer
+                    batch_start = Instant::now();
                 }
             }
         } // table is dropped here
