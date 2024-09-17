@@ -1,6 +1,6 @@
 ## key-value store benches
 
-For write-heavy loads, redb seems to suck
+For write-heavy loads, rocksdb rocks, redb sucks
 
 ```
 $ RUST_LOG=info cargo run --release -- redb
