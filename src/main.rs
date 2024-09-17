@@ -22,7 +22,7 @@ fn main() {
     // ===========================
 
     // Set the size of the write buffer (memtable) in bytes (e.g., 64MB)
-    opts.set_write_buffer_size(64 * 1024 * 1024);
+    opts.set_write_buffer_size(512 * 1024 * 1024);
 
     // Set the maximum number of write buffers that are built up in memory
     opts.set_max_write_buffer_number(3);
@@ -31,10 +31,10 @@ fn main() {
     opts.set_max_background_jobs(4);
 
     // Set the base size for level 1 (in level-based compaction)
-    opts.set_max_bytes_for_level_base(256 * 1024 * 1024); // 256MB
+    opts.set_max_bytes_for_level_base(1024 * 1024 * 1024); // 256MB
 
     // Set target file size for level compaction
-    opts.set_target_file_size_base(64 * 1024 * 1024); // 64MB
+    opts.set_target_file_size_base(128 * 1024 * 1024); // 64MB
 
     // ===========================
     // Write-Ahead Log (WAL) Settings
