@@ -1,7 +1,7 @@
 ## key-value store benches
 
 For write-heavy loads, rocksdb rocks, redb sucks
-
+![Insertion Time vs Number of Records for RedB and RocksDB](https://github.com/user-attachments/assets/3faad45f-943f-448e-b646-6781511f31b6)
 ```
 $ RUST_LOG=info cargo run --release -- redb
    Compiling rocksdb_example v0.1.0 (/home/alecm/rocksdb_example)
@@ -30,3 +30,5 @@ $ RUST_LOG=info cargo run --release -- rocksdb
 [2024-09-17T18:42:31Z INFO  rocksdb_example] Inserted 500000 records in 0.29 seconds.
 [2024-09-17T18:42:31Z INFO  rocksdb_example] Inserted 600000 records in 0.31 seconds.
 ```
+
+
